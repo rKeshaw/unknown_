@@ -148,3 +148,34 @@ body {
     color: #606770;
     margin: 0;
 }
+
+/* --- Focus Mode --- */
+.mode-toggle {
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    cursor: pointer;
+    margin-left: 20px;
+    padding: 0 10px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+.mode-toggle:hover {
+    opacity: 1;
+}
+
+/* When Learn Mode is ON, we apply these rules */
+.learn-mode-active .result-channel {
+    /* Hides view counts, likes, etc. (assuming they are in this element) */
+    display: none;
+}
+
+.learn-mode-active .results-sidebar {
+    /* In the future, we can hide comments here if they are displayed */
+    /* For now, this is a placeholder for future comment functionality */
+}
+
+/* Example of a subtle color shift */
+.learn-mode-active {
+    background-color: #e9ebee; /* Slightly different background */
+}

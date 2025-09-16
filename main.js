@@ -9,6 +9,7 @@ const searchForm = document.getElementById('search-form');
 const searchInput = document.getElementById('search-input');
 const resultsSidebar = document.getElementById('results-sidebar');
 const playerContainer = document.getElementById('player-container');
+const learnModeToggle = document.getElementById('learn-mode-toggle')
 
 // --- PLAYER VARIABLE ---
 let player; // This will hold the YouTube IFrame Player instance
@@ -23,6 +24,7 @@ function onYouTubeIframeAPIReady() {
 
 // --- EVENT LISTENERS ---
 searchForm.addEventListener('submit', handleSearchSubmit);
+learnModeToggle.addEventListener('click', toggleLearnMode);
 
 // --- CORE FUNCTIONS ---
 
@@ -43,6 +45,14 @@ async function handleSearchSubmit(event) {
         console.error("Search failed:", error);
         resultsSidebar.innerHTML = `<p class="error">Search failed. Please try again.</p>`;
     }
+}
+
+/**
+ * NEW: Toggles Learn Mode on and off.
+ */
+function toggleLearnMode() {
+    document.body.classList.toggle('learn-mode-active');
+    console.log("Learn Mode Toggled.");
 }
 
 /**
