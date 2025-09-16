@@ -25,6 +25,7 @@ searchForm.addEventListener('submit', handleSearchSubmit);
 learnModeToggle.addEventListener('click', toggleLearnMode);
 // CORRECTED: These listeners were missing and are now activated.
 resultsSidebar.addEventListener('scroll', handleSidebarScroll);
+console.log("Scroll event listener has been attached to the sidebar.")
 scrollToTopBtn.addEventListener('click', handleScrollToTop);
 
 // --- CORE FUNCTIONS ---
