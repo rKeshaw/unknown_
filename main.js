@@ -10,6 +10,7 @@ const searchInput = document.getElementById('search-input');
 const resultsSidebar = document.getElementById('results-sidebar');
 const playerContainer = document.getElementById('player-container');
 const learnModeToggle = document.getElementById('learn-mode-toggle')
+const scrollToTopBtn = document.getElementById('scroll-to-top');
 
 // --- PLAYER VARIABLE ---
 let player; // This will hold the YouTube IFrame Player instance
@@ -25,19 +26,23 @@ function onYouTubeIframeAPIReady() {
 // --- EVENT LISTENERS ---
 searchForm.addEventListener('submit', handleSearchSubmit);
 learnModeToggle.addEventListener('click', toggleLearnMode);
+resultsSidebar.addEventListener('scroll', handleSidebarScroll);
+scrollToTopBtn.addEventListener('click', handleScrollToTop);
 
 // --- CORE FUNCTIONS ---
 
 /**
  * Handles the search form submission.
  */
+
 async function handleSearchSubmit(event) {
     event.preventDefault();
     const query = searchInput.value.trim();
     if (!query) return;
 
     console.log(`Searching for: "${query}"`);
-    resultsSidebar.innerHTML = '<p>Searching...</p>';
+    // 1. New: Show Skeleton Loader
+    showSkeletonLoader(); 
     try {
         const searchResults = await fetchYouTubeVideos(query);
         displayResults(searchResults.items);
@@ -96,17 +101,57 @@ function displayResults(items) {
 /**
  * First attempt: Tries to play a video using the official IFrame player.
  */
+
+/**
+ * 1. NEW: Displays a skeleton loader in the sidebar while searching.
+ */
+function showSkeletonLoader() {
+    resultsSidebar.innerHTML = ''; // Clear previous content
+    for (let i = 0; i < 5; i++) { // Create 5 placeholder items
+        const item = document.createElement('div');
+        item.className = 'result-item';
+        item.innerHTML = `
+            <div class="skeleton skeleton-thumbnail"></div>
+            <div class="result-info">
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text short"></div>
+            </div>
+        `;
+        resultsSidebar.appendChild(item);
+    }
+}
+
 function playVideo(videoId) {
-    playerContainer.innerHTML = '<div id="youtube-player"></div>'; // Prepare div for player
+    // 2. New: Improved Search & Focus Management
+    searchInput.value = ''; // Clear the search input
+    searchInput.blur(); // Remove focus from the input
+
+    playerContainer.innerHTML = '<div id="youtube-player"></div>';
     player = new YT.Player('youtube-player', {
         height: '100%',
         width: '100%',
         videoId: videoId,
         playerVars: { 'playsinline': 1, 'rel': 0, 'autoplay': 1 },
-        events: {
-            'onError': handlePlayerError
-        }
+        events: { 'onError': handlePlayerError }
     });
+}
+
+/**
+ * 4. NEW: Handles showing/hiding the 'Scroll to Top' button.
+ */
+function handleSidebarScroll() {
+    if (resultsSidebar.scrollTop > 200) {
+        scrollToTopBtn.style.display = 'flex';
+    } else {
+        scrollToTopBtn.style.display = 'none';
+    }
+}
+
+/**
+ * 4. NEW: Scrolls the sidebar back to the top when the button is clicked.
+ */
+function handleScrollToTop() {
+    resultsSidebar.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /**

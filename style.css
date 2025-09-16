@@ -179,3 +179,69 @@ body {
 .learn-mode-active {
     background-color: #e9ebee; /* Slightly different background */
 }
+
+/* --- Additions for a more beautiful experience --- */
+
+/* 1. Enhanced Loading State (Skeleton Loader) */
+.skeleton {
+    background-color: #e9ebee;
+    border-radius: 6px;
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.skeleton-thumbnail {
+    width: 120px;
+    height: 68px;
+    margin-right: 12px;
+}
+
+.skeleton-text {
+    height: 1.2em;
+    margin-bottom: 6px;
+}
+
+.skeleton-text.short {
+    width: 60%;
+}
+
+/* 2. Refined Hover States & Transitions */
+.result-item { /* This selector is being updated */
+    display: flex;
+    margin-bottom: 12px;
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 8px;
+    transition: background-color 0.2s ease-in-out; /* Smoother transition */
+}
+.result-item:hover {
+    background-color: #e9ebee; /* A slightly more noticeable hover */
+}
+
+/* 4. 'Scroll to Top' Button */
+#scroll-to-top {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #ff0000;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+    cursor: pointer;
+    display: none; /* Hidden by default */
+    justify-content: center;
+    align-items: center;
+    opacity: 0.8;
+    transition: opacity 0.2s, transform 0.2s;
+}
+#scroll-to-top:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
