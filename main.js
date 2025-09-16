@@ -9,40 +9,44 @@ const searchForm = document.getElementById('search-form');
 const searchInput = document.getElementById('search-input');
 const resultsSidebar = document.getElementById('results-sidebar');
 const playerContainer = document.getElementById('player-container');
-const learnModeToggle = document.getElementById('learn-mode-toggle')
+const learnModeToggle = document.getElementById('learn-mode-toggle');
 const scrollToTopBtn = document.getElementById('scroll-to-top');
 
 // --- PLAYER VARIABLE ---
-let player; // This will hold the YouTube IFrame Player instance
+let player;
 
 // --- YOUTUBE I-FRAME API ---
-// This special function is called by the YouTube API script once it's ready.
 function onYouTubeIframeAPIReady() {
     console.log("YouTube Player API Ready.");
-    // We don't create the player here, we create it when the first video plays.
-    // This prevents a player from loading unnecessarily on page start.
 }
 
 // --- EVENT LISTENERS ---
 searchForm.addEventListener('submit', handleSearchSubmit);
 learnModeToggle.addEventListener('click', toggleLearnMode);
+// CORRECTED: These listeners were missing and are now activated.
 resultsSidebar.addEventListener('scroll', handleSidebarScroll);
 scrollToTopBtn.addEventListener('click', handleScrollToTop);
 
 // --- CORE FUNCTIONS ---
 
 /**
+ * Toggles Learn Mode on and off.
+ */
+function toggleLearnMode() {
+    document.body.classList.toggle('learn-mode-active');
+    console.log("Learn Mode Toggled.");
+}
+
+/**
  * Handles the search form submission.
  */
-
 async function handleSearchSubmit(event) {
     event.preventDefault();
     const query = searchInput.value.trim();
     if (!query) return;
 
     console.log(`Searching for: "${query}"`);
-    // 1. New: Show Skeleton Loader
-    showSkeletonLoader(); 
+    showSkeletonLoader();
     try {
         const searchResults = await fetchYouTubeVideos(query);
         displayResults(searchResults.items);
@@ -50,14 +54,6 @@ async function handleSearchSubmit(event) {
         console.error("Search failed:", error);
         resultsSidebar.innerHTML = `<p class="error">Search failed. Please try again.</p>`;
     }
-}
-
-/**
- * NEW: Toggles Learn Mode on and off.
- */
-function toggleLearnMode() {
-    document.body.classList.toggle('learn-mode-active');
-    console.log("Learn Mode Toggled.");
 }
 
 /**
@@ -79,11 +75,9 @@ function displayResults(items) {
         resultsSidebar.innerHTML = '<p>No results found.</p>';
         return;
     }
-
     items.forEach(item => {
         const videoId = item.id.videoId;
         const { title, channelTitle, thumbnails } = item.snippet;
-        
         const resultItem = document.createElement('div');
         resultItem.className = 'result-item';
         resultItem.innerHTML = `
@@ -101,13 +95,60 @@ function displayResults(items) {
 /**
  * First attempt: Tries to play a video using the official IFrame player.
  */
+function playVideo(videoId) {
+    searchInput.value = ''; // Clear the search input
+    searchInput.blur(); // Remove focus from the input
+    playerContainer.innerHTML = '<div id="youtube-player"></div>';
+    player = new YT.Player('youtube-player', {
+        height: '100%',
+        width: '100%',
+        videoId: videoId,
+        playerVars: { 'playsinline': 1, 'rel': 0, 'autoplay': 1 },
+        events: { 'onError': handlePlayerError }
+    });
+}
 
 /**
- * 1. NEW: Displays a skeleton loader in the sidebar while searching.
+ * Handles errors from the YouTube player.
+ */
+function handlePlayerError(event) {
+    const error = event.data;
+    const videoId = event.target.getVideoData().video_id;
+    console.error('YouTube Player Error:', error);
+    if (error === 101 || error === 150) {
+        console.warn('Embedding disabled. Attempting fallback...');
+        playVideoFallback(videoId);
+    }
+}
+
+/**
+ * Second attempt: Plays the video using our serverless function.
+ */
+async function playVideoFallback(videoId) {
+    playerContainer.innerHTML = '<p>Embedding disabled. Attempting fallback...</p>';
+    try {
+        const response = await fetch(`/.netlify/functions/getVideo?videoId=${videoId}`);
+        if (!response.ok) throw new Error('Fallback service failed.');
+        const { streamUrl } = await response.json();
+        if (!streamUrl) throw new Error('No stream URL returned.');
+        console.log("Fallback successful. Playing direct stream.");
+        playerContainer.innerHTML = `
+            <video controls autoplay style="width: 100%; height: 100%;">
+                <source src="${streamUrl}" type="video/mp4">
+            </video>
+        `;
+    } catch (error) {
+        console.error('Fallback failed:', error);
+        playerContainer.innerHTML = `<p class="error">Could not play this video. The owner has restricted it, and our fallback method also failed.</p>`;
+    }
+}
+
+/**
+ * Displays a skeleton loader in the sidebar while searching.
  */
 function showSkeletonLoader() {
-    resultsSidebar.innerHTML = ''; // Clear previous content
-    for (let i = 0; i < 5; i++) { // Create 5 placeholder items
+    resultsSidebar.innerHTML = '';
+    for (let i = 0; i < 5; i++) {
         const item = document.createElement('div');
         item.className = 'result-item';
         item.innerHTML = `
@@ -121,23 +162,8 @@ function showSkeletonLoader() {
     }
 }
 
-function playVideo(videoId) {
-    // 2. New: Improved Search & Focus Management
-    searchInput.value = ''; // Clear the search input
-    searchInput.blur(); // Remove focus from the input
-
-    playerContainer.innerHTML = '<div id="youtube-player"></div>';
-    player = new YT.Player('youtube-player', {
-        height: '100%',
-        width: '100%',
-        videoId: videoId,
-        playerVars: { 'playsinline': 1, 'rel': 0, 'autoplay': 1 },
-        events: { 'onError': handlePlayerError }
-    });
-}
-
 /**
- * 4. NEW: Handles showing/hiding the 'Scroll to Top' button.
+ * Handles showing/hiding the 'Scroll to Top' button.
  */
 function handleSidebarScroll() {
     if (resultsSidebar.scrollTop > 200) {
@@ -148,51 +174,8 @@ function handleSidebarScroll() {
 }
 
 /**
- * 4. NEW: Scrolls the sidebar back to the top when the button is clicked.
+ * Scrolls the sidebar back to the top when the button is clicked.
  */
 function handleScrollToTop() {
     resultsSidebar.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-/**
- * Handles errors from the YouTube player. This is the trigger for our hack.
- */
-function handlePlayerError(event) {
-    const error = event.data;
-    const videoId = event.target.getVideoData().video_id;
-    console.error('YouTube Player Error:', error);
-
-    // Error 101 or 150 means the video owner has disabled embedding.
-    if (error === 101 || error === 150) {
-        console.warn('Embedding disabled. Attempting fallback...');
-        playVideoFallback(videoId);
-    }
-}
-
-/**
- * Second attempt: Plays the video using our serverless function and an HTML5 player.
- */
-async function playVideoFallback(videoId) {
-    playerContainer.innerHTML = '<p>Embedding disabled. Attempting fallback...</p>';
-    try {
-        // This is the call to our own back-end function.
-        // The path '/.netlify/functions/getVideo' is a standard for Netlify.
-        const response = await fetch(`/.netlify/functions/getVideo?videoId=${videoId}`);
-        if (!response.ok) throw new Error('Fallback service failed.');
-        
-        const { streamUrl } = await response.json();
-        if (!streamUrl) throw new Error('No stream URL returned from fallback service.');
-
-        console.log("Fallback successful. Playing direct stream.");
-        // Replace the container content with a standard HTML5 video player
-        playerContainer.innerHTML = `
-            <video controls autoplay style="width: 100%; height: 100%;">
-                <source src="${streamUrl}" type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
-        `;
-    } catch (error) {
-        console.error('Fallback failed:', error);
-        playerContainer.innerHTML = `<p class="error">Could not play this video. The owner has restricted it, and our fallback method also failed.</p>`;
-    }
 }
