@@ -167,6 +167,7 @@ function showSkeletonLoader() {
  * Handles showing/hiding the 'Scroll to Top' button.
  */
 function handleSidebarScroll() {
+	console.log("Sidebar is scrolling! Current scroll position:", resultsSidebar.scrollTop);
     if (resultsSidebar.scrollTop > 200) {
         scrollToTopBtn.style.display = 'flex';
     } else {
