@@ -96,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function playVideo(videoId) {
+		console.log("Attempting to clear search box inside ")
         searchInput.value = '';
         searchInput.blur();
         playerContainer.innerHTML = '<div id="youtube-player"></div>';
