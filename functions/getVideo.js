@@ -1,48 +1,45 @@
-// The Serverless Hack, now with an Audio Mode.
 const ytdl = require('ytdl-core');
 const ytDlp = require('yt-dlp-exec');
 
 exports.handler = async (event) => {
-    // We now check for 'videoId' AND 'audioOnly' parameters
+    // --- DIAGNOSTIC STEP ---
+    console.log("BACK-END: getVideo function has been invoked.");
+    // -----------------------
+
     const { videoId, audioOnly } = event.queryStringParameters;
+    console.log("BACK-END: Received parameters:", { videoId, audioOnly });
 
     if (!videoId) {
+        console.error("BACK-END: Error - Missing videoId.");
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing videoId.' }) };
     }
 
     const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
-
-    // --- Determine the correct format based on the request ---
     const isAudioOnly = audioOnly === 'true';
     const formatString = isAudioOnly 
-        ? 'bestaudio[ext=m4a]/bestaudio' // Format for audio-only
-        : 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'; // Format for video+audio
+        ? 'bestaudio[ext=m4a]/bestaudio'
+        : 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best';
+    
+    console.log(`BACK-END: Determined format string: '${formatString}'`);
 
-    if (isAudioOnly) {
-        console.log(`[Audio Mode] Requesting audio-only stream for: ${videoId}`);
-    } else {
-        console.log(`[Video Mode] Requesting video stream for: ${videoId}`);
-    }
-
-    // --- We will primarily use yt-dlp as it's more flexible for format selection ---
     try {
-        const output = await ytDlp(youtubeUrl, {
-            dumpSingleJson: true,
-            format: formatString,
-        });
-
+        console.log("BACK-END: Attempting to get stream with yt-dlp...");
+        const output = await ytDlp(youtubeUrl, { dumpSingleJson: true, format: formatString });
         const streamUrl = output.url;
-        if (!streamUrl) throw new Error('No stream URL found by yt-dlp.');
 
-        console.log("[Success] Found stream URL. Sending back to the app.");
+        if (!streamUrl) {
+            console.error("BACK-END: Error - yt-dlp did not return a stream URL.");
+            throw new Error('No stream URL found by yt-dlp.');
+        }
+
+        console.log("BACK-END: Success! Returning stream URL.");
         return {
             statusCode: 200,
             body: JSON.stringify({ streamUrl: streamUrl, method: 'yt-dlp' }),
         };
 
     } catch (error) {
-        console.error("[Failed] yt-dlp failed:", error);
-        // You could add a second fallback method here in the future if needed
+        console.error("BACK-END: CRITICAL FAILURE in yt-dlp execution:", error);
         return {
             statusCode: 500,
             body: JSON.stringify({ error: 'All methods failed to get a stream.' }),
