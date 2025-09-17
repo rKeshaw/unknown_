@@ -1,0 +1,6 @@
+{
+  "appId": "com.focustube.app",
+  "appName": "FocusTube",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
