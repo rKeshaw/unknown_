@@ -61,12 +61,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function playVideo(videoId) {
+    async function playVideo(videoId) {
         searchInput.value = '';
         searchInput.blur();
+        
+        // Show a temporary loading state in the player
+        playerContainer.innerHTML = '<p>Loading Player...</p>';
+        playerControls.innerHTML = ''; // Clear old controls
+
+        // Proactively fetch the stream URL in the background
+        let streamUrl = null;
+        try {
+            const streamData = await fetchStream(videoId);
+            streamUrl = streamData.streamUrl;
+        } catch (error) {
+            console.error("Initial stream fetch failed, will rely on IFrame.", error);
+        }
+
+        // Load the official YouTube IFrame Player
         playerContainer.innerHTML = '<div id="youtube-player-iframe"></div>';
-        playerControls.innerHTML = `<button id="audio-mode-btn" class="control-button" title="Switch to Audio Only">🎧</button>`;
-        document.getElementById('audio-mode-btn').addEventListener('click', () => switchToAudioMode(videoId));
         player = new YT.Player('youtube-player-iframe', {
             height: '100%',
             width: '100%',
@@ -74,7 +87,16 @@ document.addEventListener('DOMContentLoaded', () => {
             playerVars: { 'playsinline': 1, 'rel': 0, 'autoplay': 1 },
             events: { 'onError': window.handlePlayerError, 'onStateChange': window.handlePlayerStateChange }
         });
+
+        // NOW, add the audio button. If we successfully fetched a stream, attach it.
+        if (streamUrl) {
+            playerControls.innerHTML = `<button id="audio-mode-btn" class="control-button" title="Switch to Audio Only">🎧</button>`;
+            const audioBtn = document.getElementById('audio-mode-btn');
+            // We pass the already-fetched URL directly to the click handler
+            audioBtn.addEventListener('click', () => switchToAudioMode(streamUrl));
+        }
     }
+
 
     async function playVideoFallback(videoId) {
         playerContainer.innerHTML = '<p>Attempting fallback...</p>';
@@ -90,18 +112,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function switchToAudioMode(videoId) {
-        playerContainer.innerHTML = '<p>Switching to Audio Mode...</p>';
+    function switchToAudioMode(streamUrl) {
+        // This function no longer needs to fetch anything. It receives the URL directly.
+        console.log("Stream URL is ready. Creating audio player.");
+        playerContainer.innerHTML = `
+            <div style="text-align: center; color: #ccc; padding-bottom: 10px;"><p style="margin: 0;">Now Playing (Audio Only)</p></div>
+            <audio controls autoplay style="width: 100%;"><source src="${streamUrl}" type="video/mp4"></audio>
+        `;
         playerControls.innerHTML = '';
-        try {
-            const { streamUrl } = await fetchStream(videoId);
-            playerContainer.innerHTML = `
-                <div style="text-align: center; color: #ccc; padding-bottom: 10px;"><p style="margin: 0;">Now Playing (Audio Only)</p></div>
-                <audio controls autoplay style="width: 100%;"><source src="${streamUrl}" type="video/mp4"></audio>
-            `;
-        } catch (error) {
-            playerContainer.innerHTML = `<p class="error">Could not switch to audio mode.</p>`;
-        }
     }
     
     // NEW Refactored function to handle all stream fetching
