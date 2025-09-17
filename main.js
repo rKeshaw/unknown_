@@ -1,9 +1,5 @@
-// A sacred space, free of algorithmic manipulation.
-
 document.addEventListener('DOMContentLoaded', () => {
-    const API_KEY = 'AIzaSyCDBue0NEe_hAOmCGJNdjLB9EgHpZL3_Lw';
-    const YOUTUBE_API_URL = 'https://www.googleapis.com/youtube/v3/search';
-
+    // --- CONFIGURATION & DOM ELEMENTS ---
     const searchForm = document.getElementById('search-form');
     const searchInput = document.getElementById('search-input');
     const resultsSidebar = document.getElementById('results-sidebar');
@@ -11,18 +7,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const playerControls = document.getElementById('player-controls');
     const learnModeToggle = document.getElementById('learn-mode-toggle');
     const scrollToTopBtn = document.getElementById('scroll-to-top');
-    let player;
+    let player; // YouTube IFrame Player instance
 
+    // --- EVENT LISTENERS ---
     searchForm.addEventListener('submit', handleSearchSubmit);
     learnModeToggle.addEventListener('click', () => document.body.classList.toggle('learn-mode-active'));
     resultsSidebar.addEventListener('scroll', handleSidebarScroll);
     scrollToTopBtn.addEventListener('click', () => resultsSidebar.scrollTo({ top: 0, behavior: 'smooth' }));
 
-    window.onYouTubeIframeAPIReady = () => console.log("YouTube Player API is globally ready.");
+    // --- YOUTUBE API HANDLERS (kept in global scope for the API script) ---
+    window.onYouTubeIframeAPIReady = () => console.log("YouTube Player API Ready.");
     window.handlePlayerError = (event) => {
-        const error = event.data;
         const videoId = event.target.getVideoData().video_id;
-        if (error === 101 || error === 150) playVideoFallback(videoId);
+        if (event.data === 101 || event.data === 150) playVideoFallback(videoId);
     };
     window.handlePlayerStateChange = (event) => {
         if (event.data === YT.PlayerState.ENDED) {
@@ -31,18 +28,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- CORE LOGIC ---
     async function handleSearchSubmit(event) {
         event.preventDefault();
         const query = searchInput.value.trim();
         if (!query) return;
         showSkeletonLoader();
         try {
-            const res = await fetch(`${YOUTUBE_API_URL}?part=snippet&type=video&maxResults=15&q=${encodeURIComponent(query)}&key=${API_KEY}`);
+            const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=15&q=${encodeURIComponent(query)}&key=AIzaSyCDBue0NEe_hAOmCGJNdjLB9EgHpZL3_Lw`);
             if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
             const data = await res.json();
             displayResults(data.items);
         } catch (error) {
-            console.error("Search failed:", error);
             resultsSidebar.innerHTML = `<p class="error">Search failed.</p>`;
         }
     }
@@ -84,53 +81,39 @@ document.addEventListener('DOMContentLoaded', () => {
         playerControls.innerHTML = `<button id="audio-mode-btn" class="control-button" title="Switch to Audio Only">🎧</button>`;
         document.getElementById('audio-mode-btn').addEventListener('click', () => switchToAudioMode(videoId));
         try {
-            const res = await fetch(`/.netlify/functions/getVideo?videoId=${videoId}`);
-            if (!res.ok) throw new Error('Fallback service failed.');
-            const { streamUrl } = await res.json();
-            if (!streamUrl) throw new Error('No stream URL returned.');
+            const { streamUrl } = await fetchStream(videoId);
             playerControls.innerHTML = '';
             playerContainer.innerHTML = `<video controls autoplay style="width: 100%; height: 100%;"><source src="${streamUrl}" type="video/mp4"></video>`;
         } catch (error) {
-            console.error('Fallback failed:', error);
-            playerContainer.innerHTML = `<p class="error">This video is restricted and the fallback method failed.</p>`;
+            playerContainer.innerHTML = `<p class="error">This video is restricted and our fallback method failed.</p>`;
             playerControls.innerHTML = '';
         }
     }
 
     async function switchToAudioMode(videoId) {
-        console.log("Switching to audio mode for:", videoId);
         playerContainer.innerHTML = '<p>Switching to Audio Mode...</p>';
         playerControls.innerHTML = '';
-
         try {
-            // We request the FULL VIDEO stream, which we know works.
-            const response = await fetch(`/.netlify/functions/getVideo?videoId=${videoId}`);
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.details || 'Audio fallback service failed.');
-            }
-            
-            const { streamUrl } = await response.json();
-            if (!streamUrl) throw new Error('No stream URL returned.');
-
-            console.log("Stream acquired. Creating audio player.");
-            
-            // The browser's <audio> tag is smart enough to play just the audio from a video file.
+            const { streamUrl } = await fetchStream(videoId);
             playerContainer.innerHTML = `
-                <div style="text-align: center; color: #ccc; padding-bottom: 10px;">
-                    <p style="margin: 0;">Now Playing (Audio Only)</p>
-                </div>
-                <audio controls autoplay style="width: 100%;">
-                    <source src="${streamUrl}" type="video/mp4">
-                    Your browser does not support the audio element.
-                </audio>
+                <div style="text-align: center; color: #ccc; padding-bottom: 10px;"><p style="margin: 0;">Now Playing (Audio Only)</p></div>
+                <audio controls autoplay style="width: 100%;"><source src="${streamUrl}" type="video/mp4"></audio>
             `;
         } catch (error) {
-            console.error('Audio mode switch failed:', error);
             playerContainer.innerHTML = `<p class="error">Could not switch to audio mode.</p>`;
         }
     }
     
+    // NEW Refactored function to handle all stream fetching
+    async function fetchStream(videoId) {
+        const res = await fetch(`/.netlify/functions/getVideo?videoId=${videoId}`);
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.details || 'Stream service failed.');
+        }
+        return res.json();
+    }
+
     function showSkeletonLoader() {
         resultsSidebar.innerHTML = '';
         for (let i = 0; i < 5; i++) {
