@@ -1,4 +1,4 @@
-const { Haptics, Dialog } = Capacitor.Plugins;
+// const { Haptics, Dialog } = Capacitor.Plugins;
 
 /// Sentry Initialization
 // The Sentry object is globally available from the script in index.html.
