@@ -100,21 +100,23 @@ document.addEventListener('DOMContentLoaded', () => {
     async function switchToAudioMode(videoId) {
         playerContainer.innerHTML = '<p>Switching to Audio Mode...</p>';
         playerControls.innerHTML = '';
-        
-        // --- DIAGNOSTIC STEP ---
-        const requestUrl = `/.netlify/functions/getVideo?videoId=${videoId}&audioOnly=true`;
-        console.log("FRONT-END: Calling serverless function at URL:", requestUrl);
-        // -----------------------
-
         try {
-            const res = await fetch(requestUrl); // Use the variable here
-            if (!res.ok) throw new Error('Audio fallback service failed.');
+            const requestUrl = `/.netlify/functions/getVideo?videoId=${videoId}&audioOnly=true`;
+            const res = await fetch(requestUrl);
+
+            // NEW: If the response is not ok, we read the error details
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.details || 'Audio fallback service failed with no details.');
+            }
+
             const { streamUrl } = await res.json();
             if (!streamUrl) throw new Error('No audio stream URL returned.');
             playerContainer.innerHTML = `<audio controls autoplay style="width: 100%;"><source src="${streamUrl}" type="audio/mp4"></audio>`;
         } catch (error) {
-            console.error('Audio mode switch failed:', error);
-            playerContainer.innerHTML = `<p class="error">Could not switch to audio mode.</p>`;
+            // The error logged here will now be much more detailed
+            console.error('CRITICAL AUDIO MODE FAILURE:', error);
+            playerContainer.innerHTML = `<p class="error">Could not switch to audio mode. Check console for details.</p>`;
         }
     }
     
