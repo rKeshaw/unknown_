@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FocusTube</title>
     <link rel="stylesheet" href="style.css">
+    <script
+      src="https://browser.sentry-cdn.com/7.112.2/bundle.min.js"
+      crossorigin="anonymous"
+    ></script>
 </head>
 <body>
 
@@ -24,17 +28,12 @@
             </div>
             <div id="player-controls" class="player-controls"></div>
         </section>
-
-        <aside class="results-sidebar" id="results-sidebar">
-            </aside>
+        <aside class="results-sidebar" id="results-sidebar"></aside>
     </main>
 
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script type="module" src="main.js"></script>
+    <script src="main.js" defer></script>
     <button id="scroll-to-top" title="Back to Top">↑</button>
-	
-	<button id="scroll-to-top" title="Back to Top">↑</button>
-    <button id="test-sentry" style="position: fixed; bottom: 80px; right: 20px;">Test Error</button>
 
 </body>
 </html>
