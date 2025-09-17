@@ -2,6 +2,12 @@ import json
 import yt_dlp
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import sentry_sdk
+
+sentry_sdk.init(
+    dsn="https://b0391d31d771754145a7ee8e87c8697a@o4510035994935296.ingest.us.sentry.io/4510036017807360",
+    traces_sample_rate=1.0
+)
 
 # Initialize the Flask application
 app = Flask(__name__)

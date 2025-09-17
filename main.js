@@ -1,3 +1,17 @@
+import * as Sentry from "@sentry/browser";
+
+Sentry.init({
+	dsn: "https://b0391d31d771754145a7ee8e87c8697a@o4510035994935296.ingest.us.sentry.io/4510036017807360",
+	integrations: [
+		Sentry.browserTracingIntegration(),
+		Sentry.replayIntegration(),
+	],
+	tracesSampleRate: 1.0,
+	replaysOnErrorSampleRate: 1.0,
+	replaysSessionSampleRate: 0.1,
+	sendDefaultPii: true
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURATION & DOM ELEMENTS ---
     const searchForm = document.getElementById('search-form');
