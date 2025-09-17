@@ -73,6 +73,7 @@ body {
     align-items: center;
     background-color: #000000;
     padding: 24px;
+	position: relative;
 }
 
 #player-container {

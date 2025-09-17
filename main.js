@@ -96,58 +96,50 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 	function playVideo(videoId) {
-	    searchInput.value = '';
-    	searchInput.blur();
-		
-		playerContainer.innerHTML = '<div id="youtube-player"></div>';
-	    player = new YT.Player('youtube-player', {
-    	    height: '100%',
-        	width: '100%',
-	        videoId: videoId,
-    	    playerVars: { 'playsinline': 1, 'rel': 0, 'autoplay': 1 },
-	        events: { 'onError': window.handlePlayerError }
-	    });
-
-	    // 2. NOW that the container is stable, find the controls div and add the button.
-    	const controls = document.getElementById('player-controls');
-	    if (controls) {
-    	    controls.innerHTML = `<button id="audio-mode-btn" class="control-button" title="Switch to Audio Only">🎧</button>`;
-        	const audioBtn = document.getElementById('audio-mode-btn');
-	        if (audioBtn) {
-    	        audioBtn.addEventListener('click', () => switchToAudioMode(videoId));
-        	}
-	    }
-	}
-
-	async function playVideoFallback(videoId) {
-    	playerContainer.innerHTML = '<p>Attempting fallback...</p>';
-    
-	    // Same logic: Ensure controls exist before trying to modify them.
-	    const controls = document.getElementById('player-controls');
-	    if (controls) {
-	        controls.innerHTML = `<button id="audio-mode-btn" class="control-button" title="Switch to Audio Only">🎧</button>`;
-    	    const audioBtn = document.getElementById('audio-mode-btn');
-        	if (audioBtn) {
-            	audioBtn.addEventListener('click', () => switchToAudioMode(videoId));
-	        }
-    	}
-
-	    try {
-    	    const response = await fetch(`/.netlify/functions/getVideo?videoId=${videoId}`);
-        	if (!response.ok) throw new Error('Fallback service failed.');
-	        const { streamUrl } = await response.json();
-    	    if (!streamUrl) throw new Error('No stream URL returned.');
+        searchInput.value = '';
+        searchInput.blur();
         
-        	// When the fallback succeeds, we no longer need the controls for it.
-	        // We will remove them before showing the HTML5 video player.
-    	    if (controls) controls.innerHTML = '';
-        	playerContainer.innerHTML = `<video controls autoplay style="width: 100%; height: 100%;"><source src="${streamUrl}" type="video/mp4"></video>`;
-	    } catch (error) {
-    	    console.error('Fallback failed:', error);
-        	playerContainer.innerHTML = `<p class="error">This video is restricted and the fallback method failed.</p>`;
-	        if (controls) controls.innerHTML = ''; // Clear controls on final failure
-    	}
-	}
+        // Create the player
+        playerContainer.innerHTML = '<div id="youtube-player"></div>';
+        player = new YT.Player('youtube-player', {
+            height: '100%',
+            width: '100%',
+            videoId: videoId,
+            playerVars: { 'playsinline': 1, 'rel': 0, 'autoplay': 1 },
+            events: {
+                'onError': window.handlePlayerError,
+                'onStateChange': handlePlayerStateChange
+            }
+        });
+
+        // Now, separately, add the controls. This is now safe.
+        const controls = document.getElementById('player-controls');
+        controls.innerHTML = `<button id="audio-mode-btn" class="control-button" title="Switch to Audio Only">🎧</button>`;
+        document.getElementById('audio-mode-btn').addEventListener('click', () => switchToAudioMode(videoId));
+    }
+
+    async function playVideoFallback(videoId) {
+        playerContainer.innerHTML = '<p>Attempting fallback...</p>';
+        
+        // Add the controls
+        const controls = document.getElementById('player-controls');
+        controls.innerHTML = `<button id="audio-mode-btn" class="control-button" title="Switch to Audio Only">🎧</button>`;
+        document.getElementById('audio-mode-btn').addEventListener('click', () => switchToAudioMode(videoId));
+
+        try {
+            const response = await fetch(`/.netlify/functions/getVideo?videoId=${videoId}`);
+            if (!response.ok) throw new Error('Fallback service failed.');
+            const { streamUrl } = await response.json();
+            if (!streamUrl) throw new Error('No stream URL returned.');
+            
+            // When fallback succeeds, we can leave the controls in case they want to switch back
+            playerContainer.innerHTML = `<video controls autoplay style="width: 100%; height: 100%;"><source src="${streamUrl}" type="video/mp4"></video>`;
+        } catch (error) {
+            console.error('Fallback failed:', error);
+            playerContainer.innerHTML = `<p class="error">This video is restricted and the fallback method failed.</p>`;
+            controls.innerHTML = ''; // Clear controls on final failure
+        }
+    }
 
 	/*
 	 * Fetches an audio-only stream and replaces the player.
