@@ -1,0 +1,6 @@
+[build]
+  # This command tells Netlify to install our dependencies like yt-dlp-exec
+  command = "npm install"
+  
+  # This is the crucial line: It tells Netlify where to find our serverless function
+  functions = "functions"
