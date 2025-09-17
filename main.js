@@ -100,8 +100,14 @@ document.addEventListener('DOMContentLoaded', () => {
     async function switchToAudioMode(videoId) {
         playerContainer.innerHTML = '<p>Switching to Audio Mode...</p>';
         playerControls.innerHTML = '';
+        
+        // --- DIAGNOSTIC STEP ---
+        const requestUrl = `/.netlify/functions/getVideo?videoId=${videoId}&audioOnly=true`;
+        console.log("FRONT-END: Calling serverless function at URL:", requestUrl);
+        // -----------------------
+
         try {
-            const res = await fetch(`/.netlify/functions/getVideo?videoId=${videoId}&audioOnly=true`);
+            const res = await fetch(requestUrl); // Use the variable here
             if (!res.ok) throw new Error('Audio fallback service failed.');
             const { streamUrl } = await res.json();
             if (!streamUrl) throw new Error('No audio stream URL returned.');
@@ -111,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
             playerContainer.innerHTML = `<p class="error">Could not switch to audio mode.</p>`;
         }
     }
-
+    
     function showSkeletonLoader() {
         resultsSidebar.innerHTML = '';
         for (let i = 0; i < 5; i++) {
