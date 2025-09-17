@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/browser";
+import * as Sentry from 'https://browser.sentry-cdn.com/7.112.2/bundle.tracing.min.js';
 
 Sentry.init({
 	dsn: "https://b0391d31d771754145a7ee8e87c8697a@o4510035994935296.ingest.us.sentry.io/4510036017807360",
