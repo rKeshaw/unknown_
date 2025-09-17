@@ -2,14 +2,15 @@ import * as Sentry from 'https://browser.sentry-cdn.com/7.112.2/bundle.tracing.m
 
 Sentry.init({
 	dsn: "https://b0391d31d771754145a7ee8e87c8697a@o4510035994935296.ingest.us.sentry.io/4510036017807360",
-	integrations: [
+/*	integrations: [
 		Sentry.browserTracingIntegration(),
 		Sentry.replayIntegration(),
 	],
 	tracesSampleRate: 1.0,
 	replaysOnErrorSampleRate: 1.0,
 	replaysSessionSampleRate: 0.1,
-	sendDefaultPii: true
+	sendDefaultPii: true 
+*/
 });
 
 document.addEventListener('DOMContentLoaded', () => {
