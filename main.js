@@ -95,33 +95,76 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    function playVideo(videoId) {
-		console.log("Attempting to clear search box inside ")
-        searchInput.value = '';
-        searchInput.blur();
-        playerContainer.innerHTML = '<div id="youtube-player"></div>';
-        player = new YT.Player('youtube-player', {
-            height: '100%',
-            width: '100%',
-            videoId: videoId,
-            playerVars: { 'playsinline': 1, 'rel': 0, 'autoplay': 1 },
-            events: { 'onError': window.handlePlayerError }
-        });
+	function playVideo(videoId) {
+	    searchInput.value = '';
+    	searchInput.blur();
+	    playerContainer.innerHTML = '<div id="youtube-player"></div>';
+    	
+	    // Clear old controls and add the new Audio Mode button
+    	const controls = document.getElementById('player-controls');
+	    controls.innerHTML = `<button id="audio-mode-btn" class="control-button" title="Switch to Audio Only">🎧</button>`;
+    	document.getElementById('audio-mode-btn').addEventListener('click', () => switchToAudioMode(videoId));
+
+	    player = new YT.Player('youtube-player', {
+    	    height: '100%',
+        	width: '100%',
+	        videoId: videoId,
+    	    playerVars: { 'playsinline': 1, 'rel': 0, 'autoplay': 1 },
+        	events: { 'onError': window.handlePlayerError }
+	    });
     }
 
-    async function playVideoFallback(videoId) {
-        playerContainer.innerHTML = '<p>Attempting fallback...</p>';
-        try {
-            const response = await fetch(`/.netlify/functions/getVideo?videoId=${videoId}`);
-            if (!response.ok) throw new Error('Fallback service failed.');
-            const { streamUrl } = await response.json();
-            if (!streamUrl) throw new Error('No stream URL returned.');
-            playerContainer.innerHTML = `<video controls autoplay style="width: 100%; height: 100%;"><source src="${streamUrl}" type="video/mp4"></video>`;
-        } catch (error) {
-            console.error('Fallback failed:', error);
-            playerContainer.innerHTML = `<p class="error">This video is restricted and the fallback method failed.</p>`;
-        }
-    }
+	async function playVideoFallback(videoId) {
+	    playerContainer.innerHTML = '<p>Attempting fallback...</p>';
+
+    	// Clear old controls and add the new Audio Mode button
+	    const controls = document.getElementById('player-controls');
+    	controls.innerHTML = `<button id="audio-mode-btn" class="control-button" title="Switch to Audio Only">🎧</button>`;
+	    document.getElementById('audio-mode-btn').addEventListener('click', () => switchToAudioMode(videoId));
+
+    	try {
+	        const response = await fetch(`/.netlify/functions/getVideo?videoId=${videoId}`);
+	        if (!response.ok) throw new Error('Fallback service failed.');
+    	    const { streamUrl } = await response.json();
+        	if (!streamUrl) throw new Error('No stream URL returned.');
+	        playerContainer.innerHTML = `<video controls autoplay style="width: 100%; height: 100%;"><source src="${streamUrl}" type="video/mp4"></video>`;
+    	} catch (error) {
+        	console.error('Fallback failed:', error);
+	        playerContainer.innerHTML = `<p class="error">This video is restricted and the fallback method failed.</p>`;
+    	    controls.innerHTML = ''; // Clear controls on final failure
+	    }
+	}
+	
+	/**
+	 * Fetches an audio-only stream and replaces the player.
+	 */
+	async function switchToAudioMode(videoId) {
+    	console.log("Switching to audio-only mode for:", videoId);
+	    playerContainer.innerHTML = '<p>Switching to Audio Mode...</p>';
+	    const controls = document.getElementById('player-controls');
+    	controls.innerHTML = ''; // Hide the button once clicked
+
+	    try {
+    	    // Call our serverless function, now with the audioOnly parameter
+        	const response = await fetch(`/.netlify/functions/getVideo?videoId=${videoId}&audioOnly=true`);
+	        if (!response.ok) throw new Error('Audio fallback service failed.');
+        
+    	    const { streamUrl } = await response.json();
+        	if (!streamUrl) throw new Error('No audio stream URL returned.');
+
+	        console.log("Audio stream acquired. Playing now.");
+    	    // Replace the container content with a standard HTML5 audio player
+        	playerContainer.innerHTML = `
+	            <audio controls autoplay style="width: 100%;">
+    	            <source src="${streamUrl}" type="audio/mp4">
+        	        Your browser does not support the audio element.
+            	</audio>
+	        `;
+    	} catch (error) {
+        	console.error('Audio mode switch failed:', error);
+	        playerContainer.innerHTML = `<p class="error">Could not switch to audio mode.</p>`;
+    	}
+	}
 
     function showSkeletonLoader() {
         resultsSidebar.innerHTML = '';

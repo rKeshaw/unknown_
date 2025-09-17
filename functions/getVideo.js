@@ -1,9 +1,10 @@
-// The Serverless Hack, now with a Resilience Engine.
+// The Serverless Hack, now with an Audio Mode.
 const ytdl = require('ytdl-core');
 const ytDlp = require('yt-dlp-exec');
 
 exports.handler = async (event) => {
-    const { videoId } = event.queryStringParameters;
+    // We now check for 'videoId' AND 'audioOnly' parameters
+    const { videoId, audioOnly } = event.queryStringParameters;
 
     if (!videoId) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing videoId.' }) };
@@ -11,49 +12,40 @@ exports.handler = async (event) => {
 
     const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
-    // --- Attempt 1: The Fast Method (ytdl-core) ---
+    // --- Determine the correct format based on the request ---
+    const isAudioOnly = audioOnly === 'true';
+    const formatString = isAudioOnly 
+        ? 'bestaudio[ext=m4a]/bestaudio' // Format for audio-only
+        : 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'; // Format for video+audio
+
+    if (isAudioOnly) {
+        console.log(`[Audio Mode] Requesting audio-only stream for: ${videoId}`);
+    } else {
+        console.log(`[Video Mode] Requesting video stream for: ${videoId}`);
+    }
+
+    // --- We will primarily use yt-dlp as it's more flexible for format selection ---
     try {
-        console.log(`[Attempt 1] Trying ytdl-core for: ${videoId}`);
-        const info = await ytdl.getInfo(youtubeUrl);
-        const format = ytdl.chooseFormat(info.formats, {
-            quality: 'highest',
-            filter: (f) => f.hasVideo && f.hasAudio && f.container === 'mp4',
+        const output = await ytDlp(youtubeUrl, {
+            dumpSingleJson: true,
+            format: formatString,
         });
-        if (!format) throw new Error('No suitable format found by ytdl-core.');
-        
-        console.log("[Attempt 1] Success!");
+
+        const streamUrl = output.url;
+        if (!streamUrl) throw new Error('No stream URL found by yt-dlp.');
+
+        console.log("[Success] Found stream URL. Sending back to the app.");
         return {
             statusCode: 200,
-            body: JSON.stringify({ streamUrl: format.url, method: 'ytdl-core' }),
+            body: JSON.stringify({ streamUrl: streamUrl, method: 'yt-dlp' }),
         };
 
     } catch (error) {
-        console.warn("[Attempt 1] ytdl-core failed:", error.message);
-        console.log(`[Attempt 2] Falling back to yt-dlp for: ${videoId}`);
-
-        // --- Attempt 2: The Robust Method (yt-dlp) ---
-        try {
-            const output = await ytDlp(youtubeUrl, {
-                dumpSingleJson: true,
-                format: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-            });
-            
-            // yt-dlp gives us direct access to the best format's URL
-            const streamUrl = output.url;
-            if (!streamUrl) throw new Error('No stream URL found by yt-dlp.');
-
-            console.log("[Attempt 2] Success!");
-            return {
-                statusCode: 200,
-                body: JSON.stringify({ streamUrl: streamUrl, method: 'yt-dlp' }),
-            };
-
-        } catch (dlpError) {
-            console.error("[Attempt 2] yt-dlp also failed:", dlpError);
-            return {
-                statusCode: 500,
-                body: JSON.stringify({ error: 'All fallback methods failed.' }),
-            };
-        }
+        console.error("[Failed] yt-dlp failed:", error);
+        // You could add a second fallback method here in the future if needed
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: 'All methods failed to get a stream.' }),
+        };
     }
 };

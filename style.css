@@ -245,3 +245,31 @@ body {
     opacity: 1;
     transform: scale(1.1);
 }
+
+/* --- Audio Mode Controls --- */
+.player-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+}
+
+.control-button {
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.control-button:hover {
+    opacity: 1;
+}
