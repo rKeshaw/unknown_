@@ -98,25 +98,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function switchToAudioMode(videoId) {
+        console.log("Switching to audio mode for:", videoId);
         playerContainer.innerHTML = '<p>Switching to Audio Mode...</p>';
         playerControls.innerHTML = '';
+
         try {
-            const requestUrl = `/.netlify/functions/getVideo?videoId=${videoId}&audioOnly=true`;
-            const res = await fetch(requestUrl);
-
-            // NEW: If the response is not ok, we read the error details
-            if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.details || 'Audio fallback service failed with no details.');
+            // We request the FULL VIDEO stream, which we know works.
+            const response = await fetch(`/.netlify/functions/getVideo?videoId=${videoId}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.details || 'Audio fallback service failed.');
             }
+            
+            const { streamUrl } = await response.json();
+            if (!streamUrl) throw new Error('No stream URL returned.');
 
-            const { streamUrl } = await res.json();
-            if (!streamUrl) throw new Error('No audio stream URL returned.');
-            playerContainer.innerHTML = `<audio controls autoplay style="width: 100%;"><source src="${streamUrl}" type="audio/mp4"></audio>`;
+            console.log("Stream acquired. Creating audio player.");
+            
+            // The browser's <audio> tag is smart enough to play just the audio from a video file.
+            playerContainer.innerHTML = `
+                <div style="text-align: center; color: #ccc; padding-bottom: 10px;">
+                    <p style="margin: 0;">Now Playing (Audio Only)</p>
+                </div>
+                <audio controls autoplay style="width: 100%;">
+                    <source src="${streamUrl}" type="video/mp4">
+                    Your browser does not support the audio element.
+                </audio>
+            `;
         } catch (error) {
-            // The error logged here will now be much more detailed
-            console.error('CRITICAL AUDIO MODE FAILURE:', error);
-            playerContainer.innerHTML = `<p class="error">Could not switch to audio mode. Check console for details.</p>`;
+            console.error('Audio mode switch failed:', error);
+            playerContainer.innerHTML = `<p class="error">Could not switch to audio mode.</p>`;
         }
     }
     
