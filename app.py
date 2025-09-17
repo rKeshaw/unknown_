@@ -12,7 +12,7 @@ sentry_sdk.init(
 # Initialize the Flask application
 app = Flask(__name__)
 # Enable Cross-Origin Resource Sharing (CORS)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route('/')
 def health_check():
