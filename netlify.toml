@@ -1,3 +1,17 @@
 [build]
+  # This command tells Netlify how to install our Python package
   command = "pip install -r requirements.txt"
+
+  # This tells Netlify where our static files are
+  publish = "."
+
+  # This tells Netlify where our function code is
   functions = "functions"
+
+# This section makes our function building more robust
+[functions]
+  node_bundler = "esbuild"
+
+# This section explicitly tells the build server which Python version to use
+[build.environment]
+  PYTHON_VERSION = "3.8"
