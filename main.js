@@ -1,6 +1,6 @@
 // Sentry Initialization
 Sentry.init({
-  dsn: "YOUR_DSN_KEY_HERE",
+	dsn: "https://b0391d31d771754145a7ee8e87c8697a@o4510035994935296.ingest.us.sentry.io/4510036017807360",
 });
 
 // We no longer need DOMContentLoaded because of the 'defer' attribute on our script tag.
