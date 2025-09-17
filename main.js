@@ -21,6 +21,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const playerControls = document.getElementById('player-controls');
     const learnModeToggle = document.getElementById('learn-mode-toggle');
     const scrollToTopBtn = document.getElementById('scroll-to-top');
+
+	const sentryTestBtn = document.getElementById('test-sentry');
+    if (sentryTestBtn) {
+        sentryTestBtn.addEventListener('click', () => {
+            // This will cause a deliberate error because the function doesn't exist
+            nonExistentFunction(); 
+        });
+    }
+
     let player; // YouTube IFrame Player instance
 
     // --- EVENT LISTENERS ---
