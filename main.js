@@ -1,6 +1,6 @@
-// The Sentry object is now globally available from the script in the HTML.
+// Sentry Initialization
 Sentry.init({
-  dsn: "https://b0391d31d771754145a7ee8e87c8697a@o4510035994935296.ingest.us.sentry.io/4510036017807360",
+  dsn: "YOUR_DSN_KEY_HERE",
 });
 
 // We no longer need DOMContentLoaded because of the 'defer' attribute on our script tag.
@@ -10,31 +10,46 @@ const searchForm = document.getElementById('search-form');
 const searchInput = document.getElementById('search-input');
 const resultsSidebar = document.getElementById('results-sidebar');
 const playerContainer = document.getElementById('player-container');
-const playerControls = document.getElementById('player-controls');
 const learnModeToggle = document.getElementById('learn-mode-toggle');
+const darkModeToggle = document.getElementById('dark-mode-toggle');
 const scrollToTopBtn = document.getElementById('scroll-to-top');
 let player;
 
 // --- EVENT LISTENERS ---
 searchForm.addEventListener('submit', handleSearchSubmit);
 learnModeToggle.addEventListener('click', () => document.body.classList.toggle('learn-mode-active'));
+darkModeToggle.addEventListener('click', toggleDarkMode);
 resultsSidebar.addEventListener('scroll', handleSidebarScroll);
 scrollToTopBtn.addEventListener('click', () => resultsSidebar.scrollTo({ top: 0, behavior: 'smooth' }));
 
 // --- YOUTUBE API HANDLERS ---
 window.onYouTubeIframeAPIReady = () => console.log("YouTube Player API Ready.");
-window.handlePlayerError = (event) => {
-    const videoId = event.target.getVideoData().video_id;
-    if (event.data === 101 || event.data === 150) playVideoFallback(videoId);
-};
 window.handlePlayerStateChange = (event) => {
     if (event.data === YT.PlayerState.ENDED) {
         playerContainer.innerHTML = `<div class="video-placeholder"><p>Video finished. Search for another.</p></div>`;
-        playerControls.innerHTML = '';
     }
 };
 
 // --- CORE LOGIC ---
+(function checkTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        darkModeToggle.textContent = '☀️';
+    }
+})();
+
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    if (document.body.classList.contains('dark-mode')) {
+        localStorage.setItem('theme', 'dark');
+        darkModeToggle.textContent = '☀️';
+    } else {
+        localStorage.setItem('theme', 'light');
+        darkModeToggle.textContent = '🌙';
+    }
+}
+
 async function handleSearchSubmit(event) {
     event.preventDefault();
     const query = searchInput.value.trim();
@@ -67,7 +82,7 @@ function displayResults(items) {
     });
 }
 
-async function playVideo(videoId) {
+function playVideo(videoId) {
     searchInput.value = '';
     searchInput.blur();
     playerContainer.innerHTML = '<div id="youtube-player-iframe"></div>';
@@ -76,49 +91,8 @@ async function playVideo(videoId) {
         width: '100%',
         videoId: videoId,
         playerVars: { 'playsinline': 1, 'rel': 0, 'autoplay': 1 },
-        events: { 'onError': window.handlePlayerError, 'onStateChange': window.handlePlayerStateChange }
+        events: { 'onStateChange': window.handlePlayerStateChange }
     });
-    let streamUrl = null;
-    try {
-        const streamData = await fetchStream(videoId);
-        streamUrl = streamData.streamUrl;
-    } catch (error) {
-        console.error("Initial stream fetch failed, audio mode will not be available.", error);
-    }
-    if (streamUrl) {
-        playerControls.innerHTML = `<button id="audio-mode-btn" class="control-button" title="Switch to Audio Only">🎧</button>`;
-        document.getElementById('audio-mode-btn').addEventListener('click', () => switchToAudioMode(streamUrl));
-    }
-}
-
-async function playVideoFallback(videoId) {
-    playerContainer.innerHTML = '<p>Attempting fallback...</p>';
-    try {
-        const { streamUrl } = await fetchStream(videoId);
-        playerControls.innerHTML = '';
-        playerContainer.innerHTML = `<video controls autoplay style="width: 100%; height: 100%;"><source src="${streamUrl}" type="video/mp4"></video>`;
-    } catch (error) {
-        playerContainer.innerHTML = `<p class="error">This video is restricted and our fallback method failed.</p>`;
-        playerControls.innerHTML = '';
-    }
-}
-
-function switchToAudioMode(streamUrl) {
-    playerContainer.innerHTML = `
-        <div style="text-align: center; color: #ccc; padding-bottom: 10px;"><p style="margin: 0;">Now Playing (Audio Only)</p></div>
-        <audio controls autoplay style="width: 100%;"><source src="${streamUrl}" type="video/mp4"></audio>
-    `;
-    playerControls.innerHTML = '';
-}
-
-async function fetchStream(videoId) {
-    const renderBackendUrl = 'https://focustube-backend-flu0.onrender.com/getVideo';
-    const res = await fetch(`${renderBackendUrl}?videoId=${videoId}`);
-    if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.details || 'Stream service failed.');
-    }
-    return res.json();
 }
 
 function showSkeletonLoader() {
