@@ -32,21 +32,29 @@ window.handlePlayerStateChange = (event) => {
 
 // --- CORE LOGIC ---
 (function checkTheme() {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        darkModeToggle.textContent = '☀️';
+    try {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            darkModeToggle.textContent = '☀️';
+        }
+    } catch (error) {
+        console.warn("Could not retrieve saved theme. Storage might be blocked.");
     }
 })();
 
 function toggleDarkMode() {
     document.body.classList.toggle('dark-mode');
-    if (document.body.classList.contains('dark-mode')) {
-        localStorage.setItem('theme', 'dark');
-        darkModeToggle.textContent = '☀️';
-    } else {
-        localStorage.setItem('theme', 'light');
-        darkModeToggle.textContent = '🌙';
+    try {
+        if (document.body.classList.contains('dark-mode')) {
+            localStorage.setItem('theme', 'dark');
+            darkModeToggle.textContent = '☀️';
+        } else {
+            localStorage.setItem('theme', 'light');
+            darkModeToggle.textContent = '🌙';
+        }
+    } catch (error) {
+        console.warn("Could not save theme preference. Storage might be blocked.");
     }
 }
 
